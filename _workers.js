@@ -6,8 +6,9 @@
 // KV 命名空间绑定（需要在 Cloudflare Workers 设置中绑定）
 // 绑定名称为: NAV_CONFIG
 
-// 管理员密码（建议在 Workers 环境变量中设置，这里作为演示使用固定值）
-const ADMIN_PASSWORD = "admin123";
+// 管理员密码（需要在 Workers 环境变量中设置 ADMIN_PASSWORD）
+// 如果没有设置环境变量，则使用默认值 "admin123"
+let ADMIN_PASSWORD = "admin123";
 
 // 默认配置
 const DEFAULT_CONFIG = {
@@ -49,7 +50,6 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
     <link href="https://cdn.jsdelivr.net/npm/semantic-ui-css@2.4.1/semantic.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/gh/sleepwood/cf-worker-dir@0.1.1/style.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .ui.left.corner.label {
             display: flex !important;
@@ -77,149 +77,61 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         .avatar.ui.image[src] {
             opacity: 1;
         }
-        /* 后台样式 - 美化版 */
-        :root {
-            --primary-color: #4f46e5;
-            --primary-light: #6366f1;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --danger-color: #ef4444;
-            --dark-color: #1f2937;
-            --light-color: #f9fafb;
-            --border-color: #e5e7eb;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-            --radius: 0.75rem;
-        }
-        
+        /* 后台样式 - 参考简洁美化版 */
         body.admin-body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
         }
         
         .admin-wrapper {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
         }
         
         .admin-header {
             background: white;
-            border-radius: var(--radius);
+            border-radius: 0.75rem;
             padding: 30px;
             margin-bottom: 30px;
-            box-shadow: var(--shadow-lg);
-            border: 1px solid var(--border-color);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .admin-header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
-        }
-        
-        .admin-header h1 {
-            color: var(--dark-color);
-            margin: 0 0 10px 0;
-            font-size: 2rem;
-            font-weight: 700;
-        }
-        
-        .admin-header p {
-            color: #6b7280;
-            margin: 0 0 25px 0;
-            font-size: 1.1rem;
-        }
-        
-        .admin-header .stats {
-            display: flex;
-            gap: 20px;
-            margin-top: 25px;
-        }
-        
-        .stat-card {
-            background: var(--light-color);
-            padding: 20px;
-            border-radius: var(--radius);
-            flex: 1;
-            border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-lg);
-        }
-        
-        .stat-card .number {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--primary-color);
-            line-height: 1;
-        }
-        
-        .stat-card .label {
-            color: #6b7280;
-            font-size: 0.9rem;
-            margin-top: 5px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
         }
         
         .config-form {
             background: white;
-            border-radius: var(--radius);
+            border-radius: 0.75rem;
             padding: 30px;
             margin-bottom: 30px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
         
-        .form-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid var(--light-color);
+        .form-group {
+            margin-bottom: 20px;
         }
         
-        .form-header i {
-            background: var(--primary-color);
-            color: white;
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            margin-right: 15px;
-        }
-        
-        .form-header h3 {
-            margin: 0;
-            color: var(--dark-color);
-            font-size: 1.5rem;
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
             font-weight: 600;
+            color: #374151;
         }
         
-        .form-header .subtitle {
-            color: #6b7280;
-            font-size: 0.95rem;
+        .form-group input[type="text"],
+        .form-group input[type="date"],
+        .form-group input[type="password"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
         }
         
-        .form-actions {
-            display: flex;
-            gap: 15px;
-            margin-top: 30px;
-            padding-top: 25px;
-            border-top: 1px solid var(--border-color);
+        .form-group input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
         }
         
         .btn {
@@ -231,30 +143,18 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
             transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
-            justify-content: center;
             gap: 8px;
         }
         
         .btn-primary {
-            background: var(--primary-color);
+            background: #4f46e5;
             color: white;
         }
         
         .btn-primary:hover {
-            background: var(--primary-light);
+            background: #6366f1;
             transform: translateY(-2px);
-            box-shadow: var(--shadow);
-        }
-        
-        .btn-success {
-            background: var(--success-color);
-            color: white;
-        }
-        
-        .btn-success:hover {
-            opacity: 0.9;
-            transform: translateY(-2px);
-            box-shadow: var(--shadow);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
         
         .btn-secondary {
@@ -262,23 +162,39 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
             color: white;
         }
         
-        .btn-danger {
-            background: var(--danger-color);
+        .btn-secondary:hover {
+            background: #4b5563;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        
+        .btn-success {
+            background: #10b981;
             color: white;
         }
         
-        .list-editor {
-            background: var(--light-color);
-            border-radius: var(--radius);
-            padding: 25px;
-            margin-bottom: 20px;
-            border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
+        .btn-danger {
+            background: #ef4444;
+            color: white;
         }
         
-        .list-editor:hover {
-            border-color: var(--primary-light);
-            box-shadow: var(--shadow);
+        .btn-logout {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .btn-logout:hover {
+            background: #4b5563;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        
+        .list-editor {
+            background: #f9fafb;
+            border-radius: 0.75rem;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid #e5e7eb;
         }
         
         .list-item {
@@ -286,110 +202,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
             border-radius: 8px;
             padding: 15px;
             margin: 10px 0;
-            border: 1px solid var(--border-color);
-            transition: all 0.2s ease;
-        }
-        
-        .list-item:hover {
-            border-color: var(--primary-light);
-            box-shadow: var(--shadow-sm);
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--dark-color);
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-        
-        .form-group input[type="text"],
-        .form-group input[type="date"],
-        .form-group input[type="password"] {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-        
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        }
-        
-        .checkbox-group {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-        
-        .custom-checkbox {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-        }
-        
-        .custom-checkbox input {
-            display: none;
-        }
-        
-        .custom-checkbox .checkmark {
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--border-color);
-            border-radius: 6px;
-            margin-right: 10px;
-            position: relative;
-            transition: all 0.3s ease;
-        }
-        
-        .custom-checkbox input:checked + .checkmark {
-            background: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        
-        .custom-checkbox input:checked + .checkmark::after {
-            content: '✓';
-            position: absolute;
-            color: white;
-            font-size: 14px;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        
-        .links-list {
-            margin-top: 20px;
-        }
-        
-        .links-list h4 {
-            color: var(--dark-color);
-            margin: 0 0 15px 0;
-            font-size: 1.2rem;
-            font-weight: 600;
-        }
-        
-        .login-container {
-            max-width: 440px;
-            margin: 80px auto;
-            padding: 50px;
-            background: white;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-lg);
-            text-align: center;
-        }
-        
-        .login-icon {
-            font-size: 3rem;
-            color: var(--primary-color);
-            margin-bottom: 20px;
+            border: 1px solid #e5e7eb;
         }
         
         .message {
@@ -397,7 +210,6 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
             border-radius: 8px;
             margin: 20px 0;
             display: none;
-            animation: slideIn 0.3s ease;
         }
         
         .message.success {
@@ -412,38 +224,92 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
             border: 1px solid #fecaca;
         }
         
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .login-container {
+            max-width: 400px;
+            margin: 80px auto;
+            padding: 40px;
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            text-align: center;
         }
         
-        .secret-admin-link {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: var(--primary-color);
-            color: white;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
+        .two-fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .form-header {
             display: flex;
             align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            box-shadow: var(--shadow-lg);
-            transition: all 0.3s ease;
-            z-index: 1000;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f9fafb;
         }
         
-        .secret-admin-link:hover {
-            transform: scale(1.1) rotate(90deg);
-            background: var(--primary-light);
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .header-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-card {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            flex: 1;
+            min-width: 150px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4f46e5;
+        }
+        
+        .stat-card .label {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .custom-checkbox {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .custom-checkbox input {
+            margin-right: 8px;
         }
         
         .drag-handle {
@@ -453,17 +319,9 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
             margin-right: 10px;
         }
         
-        .drag-handle:hover {
-            color: var(--primary-color);
-        }
-        
-        .sortable-ghost {
-            opacity: 0.4;
-            background: #f3f4f6;
-        }
-        
-        .sortable-chosen {
-            box-shadow: 0 0 0 2px var(--primary-color);
+        .links-list h4 {
+            margin-bottom: 15px;
+            color: #374151;
         }
     </style>
 </head>
@@ -548,9 +406,9 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
 const el = (tag, attrs, content) => `<${tag} ${attrs.join(' ')}>${content}</${tag}>`;
 
 // 从 KV 获取配置
-async function getConfig() {
+async function getConfig(env) {
   try {
-    const config = await NAV_CONFIG.get('site_config');
+    const config = await env.NAV_CONFIG.get('site_config');
     if (config) {
       return JSON.parse(config);
     }
@@ -561,9 +419,9 @@ async function getConfig() {
 }
 
 // 保存配置到 KV
-async function saveConfig(config) {
+async function saveConfig(config, env) {
   try {
-    await NAV_CONFIG.put('site_config', JSON.stringify(config));
+    await env.NAV_CONFIG.put('site_config', JSON.stringify(config));
     return true;
   } catch (error) {
     console.error('Error saving config to KV:', error);
@@ -691,20 +549,14 @@ function renderIndex(config, daysRunning) {
 function renderLogin() {
   return `
     <div class="login-container">
-      <div class="login-icon">
-        <i class="fas fa-lock"></i>
-      </div>
-      <h2 style="color: #1f2937; margin-bottom: 10px;">后台管理登录</h2>
-      <p style="color: #6b7280; margin-bottom: 30px;">请输入管理员密码以继续</p>
-      <form id="loginForm" style="text-align: left;">
-        <div class="form-group">
-          <label for="password">
-            <i class="fas fa-key"></i> 密码
-          </label>
-          <input type="password" id="password" name="password" placeholder="请输入管理员密码" required>
+      <h2>后台管理登录</h2>
+      <p style="color: #6b7280; margin-bottom: 30px;">请输入管理员密码</p>
+      <form id="loginForm">
+        <div style="margin-bottom: 20px;">
+          <input type="password" id="password" name="password" placeholder="请输入管理员密码" required style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid #e5e7eb;">
         </div>
-        <button class="btn btn-primary" type="submit" style="width: 100%; padding: 14px;">
-          <i class="fas fa-sign-in-alt"></i> 登录
+        <button class="btn-primary" type="submit" style="width: 100%; padding: 14px;">
+          登录
         </button>
       </form>
       <script>
@@ -714,25 +566,20 @@ function renderLogin() {
           const button = this.querySelector('button');
           const originalText = button.innerHTML;
           
-          button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登录中...';
+          button.innerHTML = '登录中...';
           button.disabled = true;
           
           try {
-            const response = await fetch('/admin/login', {
+            const response = await fetch('/yanghao/login', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ password })
+              body: JSON.stringify({ password: password })
             });
             
             if (response.ok) {
-              window.location.href = '/admin/dashboard';
+              window.location.href = '/yanghao/dashboard';
             } else {
-              const errorDiv = document.createElement('div');
-              errorDiv.className = 'message error';
-              errorDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> 密码错误！';
-              errorDiv.style.display = 'block';
-              this.appendChild(errorDiv);
-              setTimeout(() => errorDiv.remove(), 3000);
+              alert('密码错误！');
             }
           } catch (error) {
             console.error('Login error:', error);
@@ -756,113 +603,94 @@ async function renderAdminPanel(config) {
     <div class="stats">
       <div class="stat-card">
         <div class="number">${stats.totalCategories}</div>
-        <div class="label">
-          <i class="fas fa-folder"></i> 分类数量
-        </div>
+        <div class="label">分类数量</div>
       </div>
       <div class="stat-card">
         <div class="number">${stats.totalLinks}</div>
-        <div class="label">
-          <i class="fas fa-link"></i> 网站链接
-        </div>
+        <div class="label">网站链接</div>
       </div>
       <div class="stat-card">
         <div class="number">${stats.searchEngines}</div>
-        <div class="label">
-          <i class="fas fa-search"></i> 搜索引擎
-        </div>
+        <div class="label">搜索引擎</div>
       </div>
       <div class="stat-card">
         <div class="number">${daysRunning}</div>
-        <div class="label">
-          <i class="fas fa-calendar-alt"></i> 运行天数
-        </div>
+        <div class="label">运行天数</div>
       </div>
     </div>
   `;
 
-  // 生成配置编辑表单的HTML
-  const configForm = `
+  // 基本配置表单
+  const basicConfig = `
     <div class="config-form">
       <div class="form-header">
-        <i class="fas fa-cog"></i>
-        <div>
-          <h3>基本设置</h3>
-          <div class="subtitle">配置网站的基本信息和功能开关</div>
-        </div>
+        <h3>基本设置</h3>
       </div>
       
       <form id="basicConfigForm">
         <div class="form-group">
-          <label><i class="fas fa-heading"></i> 网站标题</label>
-          <input type="text" name="title" value="${config.title || ''}" placeholder="输入网站标题">
+          <label>网站标题</label>
+          <input type="text" name="title" value="${config.title || ''}">
         </div>
         
         <div class="form-group">
-          <label><i class="fas fa-heading"></i> 副标题</label>
-          <input type="text" name="subtitle" value="${config.subtitle || ''}" placeholder="输入副标题">
+          <label>副标题</label>
+          <input type="text" name="subtitle" value="${config.subtitle || ''}">
         </div>
         
-        <div class="two-fields" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="two-fields">
           <div class="form-group">
-            <label><i class="fas fa-icons"></i> 图标类名</label>
-            <input type="text" name="logo_icon" value="${config.logo_icon || ''}" placeholder="如：child, home, globe">
+            <label>图标类名</label>
+            <input type="text" name="logo_icon" value="${config.logo_icon || ''}" placeholder="child, home, globe">
           </div>
-          
           <div class="form-group">
-            <label><i class="fas fa-calendar-day"></i> 开始日期</label>
+            <label>开始日期</label>
             <input type="date" name="startDate" value="${config.startDate || ''}">
           </div>
         </div>
         
         <div class="form-group">
-          <label><i class="fas fa-toggle-on"></i> 功能开关</label>
+          <label>功能设置</label>
           <div class="checkbox-group">
             <label class="custom-checkbox">
               <input type="checkbox" name="hitokoto" ${config.hitokoto ? 'checked' : ''}>
-              <span class="checkmark"></span>
               一言显示
             </label>
             <label class="custom-checkbox">
               <input type="checkbox" name="search" ${config.search ? 'checked' : ''}>
-              <span class="checkmark"></span>
               搜索功能
             </label>
           </div>
         </div>
         
         <div class="form-actions">
-          <button type="submit" class="btn btn-primary">
-            <i class="fas fa-save"></i> 保存设置
+          <button type="submit" class="btn-primary">
+            保存设置
           </button>
-          <button type="button" class="btn btn-secondary" onclick="location.reload()">
-            <i class="fas fa-redo"></i> 重置
+          <button type="button" class="btn-secondary" onclick="location.reload()">
+            重置
           </button>
         </div>
       </form>
     </div>
   `;
 
-  // 生成搜索引擎配置
+  // 搜索引擎配置
   const searchEngineForm = `
     <div class="config-form">
       <div class="form-header">
-        <i class="fas fa-search"></i>
-        <div>
-          <h3>搜索引擎管理</h3>
-          <div class="subtitle">配置可用的搜索引擎选项</div>
-        </div>
+        <h3>搜索引擎管理</h3>
       </div>
       
       <div id="searchEngines">
         ${config.search_engine.map((engine, index) => `
           <div class="list-item" data-index="${index}">
-            <div class="two-fields" style="display: grid; grid-template-columns: 1fr 2fr; gap: 15px;">
-              <div class="form-group">
-                <input type="text" class="engine-name" placeholder="引擎名称" value="${engine.name}">
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 15px;">
+              <div style="margin: 0;">
+                <input type="text" class="engine-name" placeholder="引擎名称" value="${engine.name}" style="width: 100%;">
               </div>
-              <div class="form-group">
-                <input type="text" class="engine-template" placeholder="搜索模板 ($s为搜索词)" value="${engine.template}">
+              <div style="margin: 0;">
+                <input type="text" class="engine-template" placeholder="搜索模板 (\$s为搜索词)" value="${engine.template}" style="width: 100%;">
               </div>
             </div>
           </div>
@@ -870,276 +698,225 @@ async function renderAdminPanel(config) {
       </div>
       
       <div class="form-actions">
-        <button type="button" class="btn btn-secondary" onclick="addSearchEngine()">
-          <i class="fas fa-plus"></i> 添加搜索引擎
+        <button type="button" class="btn-secondary" onclick="addSearchEngine()">
+          添加搜索引擎
         </button>
-        <button type="button" class="btn btn-primary" onclick="saveSearchEngines()">
-          <i class="fas fa-save"></i> 保存搜索引擎
+        <button type="button" class="btn-primary" onclick="saveSearchEngines()">
+          保存搜索引擎
         </button>
       </div>
     </div>
   `;
 
-  // 生成分类列表编辑
+  // 分类管理
   const listsForm = `
     <div class="config-form">
       <div class="form-header">
-        <i class="fas fa-list"></i>
-        <div>
-          <h3>导航分类管理</h3>
-          <div class="subtitle">管理网站分类和链接</div>
-        </div>
+        <h3>导航分类管理</h3>
       </div>
       
       <div id="categoryList">
         ${config.lists.map((category, catIndex) => `
           <div class="list-editor" data-index="${catIndex}">
-            <div class="form-header" style="border: none; padding: 0; margin-bottom: 20px;">
-              <i class="fas fa-folder" style="background: #f59e0b;"></i>
-              <div style="flex: 1;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                  <div class="form-group" style="margin: 0;">
-                    <label>分类名称</label>
-                    <input type="text" class="category-name" placeholder="输入分类名称" value="${category.name}">
-                  </div>
-                  <div class="form-group" style="margin: 0;">
-                    <label>图标类名</label>
-                    <input type="text" class="category-icon" placeholder="如：laptop, globe" value="${category.icon}">
-                  </div>
-                </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+              <div style="margin: 0;">
+                <label>分类名称</label>
+                <input type="text" class="category-name" value="${category.name}" style="width: 100%;">
+              </div>
+              <div style="margin: 0;">
+                <label>图标类名</label>
+                <input type="text" class="category-icon" value="${category.icon}" style="width: 100%;">
               </div>
             </div>
             
             <div class="links-list">
-              <h4><i class="fas fa-link"></i> 网站列表</h4>
+              <h4>网站列表</h4>
               ${category.list.map((link, linkIndex) => `
                 <div class="list-item" data-link-index="${linkIndex}">
                   <i class="fas fa-grip-vertical drag-handle"></i>
                   <div style="flex: 1;">
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1.5fr; gap: 15px;">
-                      <div class="form-group" style="margin: 0;">
-                        <input type="text" class="link-url" placeholder="网址 (https://...)" value="${link.url}">
+                    <div style="display: grid; grid-template-columns: 2fr 1fr 1.5fr auto; gap: 15px; align-items: center;">
+                      <div style="margin: 0;">
+                        <input type="text" class="link-url" value="${link.url}" placeholder="网址" style="width: 100%;">
                       </div>
-                      <div class="form-group" style="margin: 0;">
-                        <input type="text" class="link-name" placeholder="网站名称" value="${link.name}">
+                      <div style="margin: 0;">
+                        <input type="text" class="link-name" value="${link.name}" placeholder="网站名称" style="width: 100%;">
                       </div>
-                      <div class="form-group" style="margin: 0;">
-                        <input type="text" class="link-desc" placeholder="描述" value="${link.desc}">
+                      <div style="margin: 0;">
+                        <input type="text" class="link-desc" value="${link.desc}" placeholder="描述" style="width: 100%;">
                       </div>
+                      <button type="button" class="btn-danger" onclick="removeLink(this)" style="padding: 8px 12px;">
+                        删除
+                      </button>
                     </div>
                   </div>
-                  <button type="button" class="btn btn-danger" onclick="removeLink(this)" style="margin-left: 10px; padding: 8px 12px;">
-                    <i class="fas fa-trash"></i>
-                  </button>
                 </div>
               `).join('')}
             </div>
             
-            <div class="form-actions" style="margin-top: 20px;">
-              <button type="button" class="btn btn-secondary" onclick="addLink(${catIndex})">
-                <i class="fas fa-plus"></i> 添加网站
+            <div style="margin-top: 20px; display: flex; gap: 15px;">
+              <button type="button" class="btn-secondary" onclick="addLink(${catIndex})">
+                添加网站
               </button>
-              <button type="button" class="btn btn-danger" onclick="removeCategory(${catIndex})">
-                <i class="fas fa-trash"></i> 删除分类
+              <button type="button" class="btn-danger" onclick="removeCategory(${catIndex})">
+                删除分类
               </button>
             </div>
           </div>
         `).join('')}
       </div>
       
-      <div class="form-actions" style="margin-top: 30px;">
-        <button type="button" class="btn btn-primary" onclick="addCategory()">
-          <i class="fas fa-plus"></i> 添加分类
+      <div class="form-actions">
+        <button type="button" class="btn-primary" onclick="addCategory()">
+          添加分类
         </button>
-        <button type="button" class="btn btn-success" onclick="saveAllCategories()">
-          <i class="fas fa-save"></i> 保存所有配置
+        <button type="button" class="btn-success" onclick="saveAllCategories()">
+          保存所有配置
         </button>
       </div>
     </div>
   `;
 
-  // 组合完整的后台页面
-  return `
-    <div class="admin-wrapper">
-      <div class="admin-header">
-        <h1><i class="fas fa-sliders-h"></i> 导航后台管理系统</h1>
-        <p>欢迎回来！在这里管理您的导航网站。所有更改将自动保存到 Cloudflare KV。</p>
-        <div style="display: flex; gap: 15px;">
-          <a href="/" class="btn btn-secondary">
-            <i class="fas fa-home"></i> 返回首页
-          </a>
-          <button class="btn" onclick="clearCache()" style="background: #e5e7eb; color: #374151;">
-            <i class="fas fa-sync-alt"></i> 清除缓存
-          </button>
-          <button class="btn" onclick="location.reload()" style="background: #f3f4f6; color: #374151;">
-            <i class="fas fa-redo"></i> 刷新页面
-          </button>
-        </div>
-        ${statsCards}
-      </div>
-      
-      ${configForm}
-      ${searchEngineForm}
-      ${listsForm}
-      
-      <div class="message success" id="successMessage"></div>
-      <div class="message error" id="errorMessage"></div>
-      
-      <script>
-        let currentConfig = ${JSON.stringify(config)};
-        
-        // 初始化排序功能
-        document.addEventListener('DOMContentLoaded', function() {
-          // 为每个分类的链接列表初始化排序
-          document.querySelectorAll('.links-list').forEach(linksList => {
-            new Sortable(linksList.querySelectorAll('.list-item')[0]?.parentElement || linksList, {
-              animation: 150,
-              ghostClass: 'sortable-ghost',
-              chosenClass: 'sortable-chosen',
-              handle: '.drag-handle',
-              onEnd: function() {
-                // 更新顺序后可以在这里处理
-              }
-            });
-          });
-        });
-        
-        // 显示消息
-        function showMessage(type, text) {
-          const message = document.getElementById(type + 'Message');
-          message.innerHTML = \`<i class="fas fa-\${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> \${text}\`;
+  // 组合完整后台页面
+  const adminScript = `
+    <script>
+      // 显示消息
+      function showMessage(type, text) {
+        const message = document.getElementById(type + 'Message');
+        if (message) {
+          message.innerHTML = text;
           message.style.display = 'block';
           setTimeout(() => message.style.display = 'none', 3000);
-          
-          // 滚动到消息位置
-          message.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          message.scrollIntoView({ behavior: 'smooth' });
         }
-        
-        // 添加搜索引擎
-        function addSearchEngine() {
-          const container = document.getElementById('searchEngines');
-          const index = container.children.length;
-          const html = \`
-            <div class="list-item" data-index="\${index}">
-              <div class="two-fields" style="display: grid; grid-template-columns: 1fr 2fr; gap: 15px;">
-                <div class="form-group">
-                  <input type="text" class="engine-name" placeholder="引擎名称">
-                </div>
-                <div class="form-group">
-                  <input type="text" class="engine-template" placeholder="搜索模板 (\$s为搜索词)">
-                </div>
+      }
+      
+      // 退出登录函数
+      function logout() {
+        if (confirm('确定要退出登录吗？')) {
+          document.cookie = 'admin_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/yanghao;';
+          window.location.href = '/yanghao';
+        }
+      }
+      
+      // 添加搜索引擎
+      function addSearchEngine() {
+        const container = document.getElementById('searchEngines');
+        const index = container.children.length;
+        const html = \`
+          <div class="list-item" data-index="\${index}">
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 15px;">
+              <div style="margin: 0;">
+                <input type="text" class="engine-name" placeholder="引擎名称" style="width: 100%;">
+              </div>
+              <div style="margin: 0;">
+                <input type="text" class="engine-template" placeholder="搜索模板 (\$s为搜索词)" style="width: 100%;">
               </div>
             </div>
-          \`;
-          container.insertAdjacentHTML('beforeend', html);
-        }
+          </div>
+        \`;
+        container.insertAdjacentHTML('beforeend', html);
+      }
+      
+      // 保存搜索引擎
+      async function saveSearchEngines() {
+        const engines = [];
+        document.querySelectorAll('#searchEngines .list-item').forEach(item => {
+          const name = item.querySelector('.engine-name').value;
+          const template = item.querySelector('.engine-template').value;
+          if (name && template) {
+            engines.push({ name, template });
+          }
+        });
         
-        // 保存搜索引擎
-        async function saveSearchEngines() {
-          const engines = [];
-          document.querySelectorAll('#searchEngines .list-item').forEach(item => {
-            const name = item.querySelector('.engine-name').value;
-            const template = item.querySelector('.engine-template').value;
-            if (name && template) {
-              engines.push({ name, template });
-            }
+        try {
+          const response = await fetch('/yanghao/config', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ search_engine: engines })
           });
           
-          try {
-            const response = await fetch('/admin/config', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ search_engine: engines })
-            });
-            
-            if (response.ok) {
-              showMessage('success', '搜索引擎配置已保存！');
-            } else {
-              throw new Error('保存失败');
-            }
-          } catch (error) {
-            showMessage('error', '保存失败：' + error.message);
+          if (response.ok) {
+            showMessage('success', '搜索引擎配置已保存！');
+          } else {
+            throw new Error('保存失败');
           }
+        } catch (error) {
+          showMessage('error', '保存失败：' + error.message);
         }
-        
-        // 添加分类
-        function addCategory() {
-          const container = document.getElementById('categoryList');
-          const index = container.children.length;
-          const html = \`
-            <div class="list-editor" data-index="\${index}">
-              <div class="form-header" style="border: none; padding: 0; margin-bottom: 20px;">
-                <i class="fas fa-folder" style="background: #f59e0b;"></i>
-                <div style="flex: 1;">
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                    <div class="form-group" style="margin: 0;">
-                      <label>分类名称</label>
-                      <input type="text" class="category-name" placeholder="输入分类名称">
-                    </div>
-                    <div class="form-group" style="margin: 0;">
-                      <label>图标类名</label>
-                      <input type="text" class="category-icon" placeholder="如：laptop, globe">
-                    </div>
-                  </div>
-                </div>
+      }
+      
+      // 添加分类
+      function addCategory() {
+        const container = document.getElementById('categoryList');
+        const index = container.children.length;
+        const html = \`
+          <div class="list-editor" data-index="\${index}">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+              <div style="margin: 0;">
+                <label>分类名称</label>
+                <input type="text" class="category-name" placeholder="新分类" style="width: 100%;">
               </div>
-              
-              <div class="links-list">
-                <h4><i class="fas fa-link"></i> 网站列表</h4>
-                <!-- 初始为空 -->
-              </div>
-              
-              <div class="form-actions" style="margin-top: 20px;">
-                <button type="button" class="btn btn-secondary" onclick="addLink(\${index})">
-                  <i class="fas fa-plus"></i> 添加网站
-                </button>
-                <button type="button" class="btn btn-danger" onclick="removeCategory(\${index})">
-                  <i class="fas fa-trash"></i> 删除分类
-                </button>
+              <div style="margin: 0;">
+                <label>图标类名</label>
+                <input type="text" class="category-icon" placeholder="laptop" style="width: 100%;">
               </div>
             </div>
-          \`;
-          container.insertAdjacentHTML('beforeend', html);
-        }
-        
-        // 添加网站链接
-        function addLink(catIndex) {
-          const categories = document.querySelectorAll('.list-editor');
-          if (catIndex >= categories.length) return;
-          
-          const category = categories[catIndex];
-          const linksList = category.querySelector('.links-list');
-          
-          // 确保有 h4 标题
-          if (!linksList.querySelector('h4')) {
-            linksList.innerHTML = '<h4><i class="fas fa-link"></i> 网站列表</h4>';
-          }
-          
-          const html = \`
-            <div class="list-item" data-link-index="\${linksList.querySelectorAll('.list-item').length}">
-              <i class="fas fa-grip-vertical drag-handle"></i>
-              <div style="flex: 1;">
-                <div style="display: grid; grid-template-columns: 2fr 1fr 1.5fr; gap: 15px;">
-                  <div class="form-group" style="margin: 0;">
-                    <input type="text" class="link-url" placeholder="网址 (https://...)" value="">
-                  </div>
-                  <div class="form-group" style="margin: 0;">
-                    <input type="text" class="link-name" placeholder="网站名称" value="">
-                  </div>
-                  <div class="form-group" style="margin: 0;">
-                    <input type="text" class="link-desc" placeholder="描述" value="">
-                  </div>
-                </div>
-              </div>
-              <button type="button" class="btn btn-danger" onclick="removeLink(this)" style="margin-left: 10px; padding: 8px 12px;">
-                <i class="fas fa-trash"></i>
+            <div class="links-list">
+              <h4>网站列表</h4>
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 15px;">
+              <button type="button" class="btn-secondary" onclick="addLink(\${index})">
+                添加网站
+              </button>
+              <button type="button" class="btn-danger" onclick="removeCategory(\${index})">
+                删除分类
               </button>
             </div>
-          \`;
-          
-          linksList.insertAdjacentHTML('beforeend', html);
-          
-          // 为新列表初始化排序
+          </div>
+        \`;
+        container.insertAdjacentHTML('beforeend', html);
+      }
+      
+      // 添加网站链接
+      function addLink(catIndex) {
+        const categories = document.querySelectorAll('.list-editor');
+        if (catIndex >= categories.length) return;
+        
+        const category = categories[catIndex];
+        const linksList = category.querySelector('.links-list');
+        
+        // 确保有 h4 标题
+        if (!linksList.querySelector('h4')) {
+          linksList.innerHTML = '<h4>网站列表</h4>';
+        }
+        
+        const html = \`
+          <div class="list-item" data-link-index="\${linksList.querySelectorAll('.list-item').length}">
+            <i class="fas fa-grip-vertical drag-handle"></i>
+            <div style="flex: 1;">
+              <div style="display: grid; grid-template-columns: 2fr 1fr 1.5fr auto; gap: 15px; align-items: center;">
+                <div style="margin: 0;">
+                  <input type="text" class="link-url" placeholder="网址" style="width: 100%;">
+                </div>
+                <div style="margin: 0;">
+                  <input type="text" class="link-name" placeholder="网站名称" style="width: 100%;">
+                </div>
+                <div style="margin: 0;">
+                  <input type="text" class="link-desc" placeholder="描述" style="width: 100%;">
+                </div>
+                <button type="button" class="btn-danger" onclick="removeLink(this)" style="padding: 8px 12px;">
+                  删除
+                </button>
+              </div>
+            </div>
+          </div>
+        \`;
+        
+        linksList.insertAdjacentHTML('beforeend', html);
+        
+        // 为新列表初始化排序
+        if (linksList.querySelectorAll('.list-item').length > 0) {
           new Sortable(linksList, {
             animation: 150,
             ghostClass: 'sortable-ghost',
@@ -1147,142 +924,167 @@ async function renderAdminPanel(config) {
             handle: '.drag-handle'
           });
         }
-        
-        // 删除链接
-        function removeLink(button) {
-          const listItem = button.closest('.list-item');
-          if (listItem && confirm('确定要删除这个链接吗？')) {
-            listItem.remove();
+      }
+      
+      // 删除链接
+      function removeLink(button) {
+        if (confirm('确定要删除这个链接吗？')) {
+          button.closest('.list-item').remove();
+        }
+      }
+      
+      // 删除分类
+      function removeCategory(index) {
+        if (confirm('确定要删除这个分类吗？该分类下的所有链接也将被删除。')) {
+          const categories = document.querySelectorAll('.list-editor');
+          if (index < categories.length) {
+            categories[index].remove();
           }
         }
-        
-        // 删除分类
-        function removeCategory(index) {
-          if (confirm('确定要删除这个分类吗？该分类下的所有链接也将被删除。')) {
-            const categories = document.querySelectorAll('.list-editor');
-            if (index < categories.length) {
-              categories[index].remove();
-            }
-          }
-        }
-        
-        // 保存所有分类
-        async function saveAllCategories() {
-          const categories = [];
-          document.querySelectorAll('#categoryList .list-editor').forEach(category => {
-            const name = category.querySelector('.category-name').value;
-            const icon = category.querySelector('.category-icon').value;
-            const links = [];
-            
-            category.querySelectorAll('.links-list .list-item').forEach(link => {
-              const url = link.querySelector('.link-url').value;
-              const name = link.querySelector('.link-name').value;
-              const desc = link.querySelector('.link-desc').value;
-              if (url && name) {
-                links.push({ url, name, desc: desc || '' });
-              }
-            });
-            
-            if (name && icon && links.length > 0) {
-              categories.push({ name, icon, list: links });
+      }
+      
+      // 保存所有分类
+      async function saveAllCategories() {
+        const categories = [];
+        document.querySelectorAll('#categoryList .list-editor').forEach(category => {
+          const name = category.querySelector('.category-name').value;
+          const icon = category.querySelector('.category-icon').value;
+          const links = [];
+          
+          category.querySelectorAll('.links-list .list-item').forEach(link => {
+            const url = link.querySelector('.link-url').value;
+            const name = link.querySelector('.link-name').value;
+            const desc = link.querySelector('.link-desc').value;
+            if (url && name) {
+              links.push({ url, name, desc: desc || '' });
             }
           });
           
-          try {
-            const response = await fetch('/admin/config', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ lists: categories })
-            });
-            
-            if (response.ok) {
-              showMessage('success', '分类配置已保存！页面将在3秒后刷新...');
-              setTimeout(() => location.reload(), 3000);
-            } else {
-              throw new Error('保存失败');
-            }
-          } catch (error) {
-            showMessage('error', '保存失败：' + error.message);
+          if (name && icon) {
+            categories.push({ name, icon, list: links });
           }
-        }
+        });
         
-        // 清除缓存
-        async function clearCache() {
-          try {
-            const response = await fetch('/admin/clear-cache', { method: 'POST' });
-            if (response.ok) {
-              showMessage('success', '缓存已清除！');
-            }
-          } catch (error) {
-            showMessage('error', '清除缓存失败');
-          }
-        }
-        
-        // 基本配置表单提交
-        document.getElementById('basicConfigForm').addEventListener('submit', async function(e) {
-          e.preventDefault();
-          const formData = new FormData(this);
-          const data = {
-            title: formData.get('title'),
-            subtitle: formData.get('subtitle'),
-            logo_icon: formData.get('logo_icon'),
-            startDate: formData.get('startDate'),
-            hitokoto: this.querySelector('[name="hitokoto"]').checked,
-            search: this.querySelector('[name="search"]').checked
-          };
+        try {
+          const response = await fetch('/yanghao/config', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lists: categories })
+          });
           
-          try {
-            const response = await fetch('/admin/config', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(data)
-            });
-            
-            if (response.ok) {
-              showMessage('success', '基本配置已保存！');
-            } else {
-              throw new Error('保存失败');
-            }
-          } catch (error) {
-            showMessage('error', '保存失败：' + error.message);
+          if (response.ok) {
+            showMessage('success', '分类配置已保存！页面将在3秒后刷新...');
+            setTimeout(() => location.reload(), 3000);
+          } else {
+            throw new Error('保存失败');
           }
-        });
+        } catch (error) {
+          showMessage('error', '保存失败：' + error.message);
+        }
+      }
+      
+      // 清除缓存
+      async function clearCache() {
+        try {
+          const response = await fetch('/yanghao/clear-cache', { method: 'POST' });
+          if (response.ok) {
+            showMessage('success', '缓存已清除！');
+          }
+        } catch (error) {
+          showMessage('error', '清除缓存失败');
+        }
+      }
+      
+      // 基本配置表单提交
+      document.getElementById('basicConfigForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const data = {
+          title: this.querySelector('[name="title"]').value,
+          subtitle: this.querySelector('[name="subtitle"]').value,
+          logo_icon: this.querySelector('[name="logo_icon"]').value,
+          startDate: this.querySelector('[name="startDate"]').value,
+          hitokoto: this.querySelector('[name="hitokoto"]').checked,
+          search: this.querySelector('[name="search"]').checked
+        };
         
-        // 添加键盘快捷键
-        document.addEventListener('keydown', function(e) {
-          // Ctrl + S 保存
-          if (e.ctrlKey && e.key === 's') {
-            e.preventDefault();
-            const activeForm = document.querySelector('form:focus-within');
-            if (activeForm && activeForm.id === 'basicConfigForm') {
-              activeForm.dispatchEvent(new Event('submit'));
-            }
+        try {
+          const response = await fetch('/yanghao/config', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+          
+          if (response.ok) {
+            showMessage('success', '基本配置已保存！');
+          } else {
+            throw new Error('保存失败');
           }
-        });
-      </script>
+        } catch (error) {
+          showMessage('error', '保存失败：' + error.message);
+        }
+      });
+    </script>
+  `;
+  
+  return `
+    <div class="admin-wrapper">
+      <div class="admin-header">
+        <div class="header-actions">
+          <div>
+            <h1>导航后台管理系统</h1>
+            <p>管理员，您好！当前配置：${stats.totalCategories} 个分类，${stats.totalLinks} 个链接，已运行 ${daysRunning} 天</p>
+          </div>
+          <div class="header-right">
+            <button class="btn-logout" onclick="logout()">
+              退出登录
+            </button>
+          </div>
+        </div>
+        <div style="display: flex; gap: 15px; margin-top: 20px;">
+          <a href="/" class="btn-secondary" style="background: #e5e7eb; color: #374151; text-decoration: none;">
+            返回首页
+          </a>
+          <button class="btn-secondary" onclick="clearCache()" style="background: #e5e7eb; color: #374151;">
+            清除缓存
+          </button>
+          <button class="btn-secondary" onclick="location.reload()" style="background: #e5e7eb; color: #374151;">
+            刷新页面
+          </button>
+        </div>
+        ${statsCards}
+      </div>
+      
+      ${basicConfig}
+      ${searchEngineForm}
+      ${listsForm}
+      
+      <div class="message success" id="successMessage"></div>
+      <div class="message error" id="errorMessage"></div>
+      
+      ${adminScript}
     </div>
   `;
 }
 
 // 处理后台 API 请求
-async function handleAdminAPI(request, config) {
+async function handleAdminAPI(request, config, env, adminPassword) {
   const url = new URL(request.url);
   const path = url.pathname;
 
   // 登录验证
-  if (path === '/admin/login' && request.method === 'POST') {
+  if (path === '/yanghao/login' && request.method === 'POST') {
     try {
       const { password } = await request.json();
-      if (password === ADMIN_PASSWORD) {
+      if (password === adminPassword) {
         return new Response(JSON.stringify({ success: true }), {
           headers: { 
-            'Set-Cookie': `admin_auth=${ADMIN_PASSWORD}; HttpOnly; Path=/admin; Max-Age=86400`,
+            'Set-Cookie': `admin_auth=${adminPassword}; HttpOnly; Path=/yanghao; Max-Age=86400`,
             'Content-Type': 'application/json'
           }
         });
       }
     } catch (error) {
-      // 忽略错误
+      console.error('Login error:', error);
     }
     return new Response(JSON.stringify({ error: '密码错误' }), { 
       status: 401,
@@ -1290,21 +1092,34 @@ async function handleAdminAPI(request, config) {
     });
   }
 
-  // 验证管理员身份
-  const cookie = request.headers.get('Cookie') || '';
-  if (!cookie.includes(`admin_auth=${ADMIN_PASSWORD}`)) {
-    return new Response(JSON.stringify({ error: '未授权' }), { 
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
+  // 退出登录
+  if (path === '/yanghao/logout' && request.method === 'POST') {
+    return new Response(JSON.stringify({ success: true }), {
+      status: 302,
+      headers: { 
+        'Location': '/yanghao',
+        'Set-Cookie': 'admin_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/yanghao; HttpOnly'
+      }
     });
   }
 
+  // 验证管理员身份（除了登录和退出请求）
+  if (path !== '/yanghao/login' && path !== '/yanghao/logout') {
+    const cookie = request.headers.get('Cookie') || '';
+    if (!cookie.includes(`admin_auth=${adminPassword}`)) {
+      return new Response(JSON.stringify({ error: '未授权' }), { 
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  }
+
   // 更新配置
-  if (path === '/admin/config' && request.method === 'PUT') {
+  if (path === '/yanghao/config' && request.method === 'PUT') {
     try {
       const updates = await request.json();
       const updatedConfig = { ...config, ...updates };
-      const saved = await saveConfig(updatedConfig);
+      const saved = await saveConfig(updatedConfig, env);
       
       if (saved) {
         return new Response(JSON.stringify({ success: true }), {
@@ -1322,7 +1137,7 @@ async function handleAdminAPI(request, config) {
   }
 
   // 清除缓存
-  if (path === '/admin/clear-cache' && request.method === 'POST') {
+  if (path === '/yanghao/clear-cache' && request.method === 'POST') {
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' }
     });
@@ -1335,40 +1150,66 @@ async function handleAdminAPI(request, config) {
 }
 
 // 主请求处理函数
-async function handleRequest(request) {
+async function handleRequest(request, env) {
   const url = new URL(request.url);
   const path = url.pathname;
+  
+  // 获取管理员密码（环境变量优先）
+  const adminPassword = env.ADMIN_PASSWORD || ADMIN_PASSWORD;
 
   // 获取配置
-  const config = await getConfig();
+  const config = await getConfig(env);
 
   // 处理后台相关路由
-  if (path.startsWith('/admin')) {
-    // 后台页面
-    if (path === '/admin' || path === '/admin/') {
+  if (path.startsWith('/yanghao')) {
+    // 后台登录页面
+    if (path === '/yanghao' || path === '/yanghao/') {
       const cookie = request.headers.get('Cookie') || '';
-      if (cookie.includes(`admin_auth=${ADMIN_PASSWORD}`)) {
+      if (cookie.includes(`admin_auth=${adminPassword}`)) {
         const adminHTML = await renderAdminPanel(config);
-        return new Response(adminHTML.replace('{{BODY_CLASS}}', 'admin-body'), {
+        const html = HTML_TEMPLATE
+          .replace('{{TITLE}}', '后台管理 - ' + config.title)
+          .replace('{{BODY_CLASS}}', 'admin-body')
+          .replace('{{CONTENT_PLACEHOLDER}}', adminHTML)
+          .replace('{{SEARCH_ENGINE_TEMPLATE}}', '')
+          .replace('{{HITOKOTO_SCRIPT}}', '');
+        return new Response(html, {
           headers: { 'Content-Type': 'text/html;charset=UTF-8' }
         });
       } else {
-        return new Response(renderLogin().replace('{{BODY_CLASS}}', 'admin-body'), {
+        const html = HTML_TEMPLATE
+          .replace('{{TITLE}}', '后台登录')
+          .replace('{{BODY_CLASS}}', 'admin-body')
+          .replace('{{CONTENT_PLACEHOLDER}}', renderLogin())
+          .replace('{{SEARCH_ENGINE_TEMPLATE}}', '')
+          .replace('{{HITOKOTO_SCRIPT}}', '');
+        return new Response(html, {
           headers: { 'Content-Type': 'text/html;charset=UTF-8' }
         });
       }
     }
 
     // 后台仪表板
-    if (path === '/admin/dashboard') {
-      const adminHTML = await renderAdminPanel(config);
-      return new Response(adminHTML.replace('{{BODY_CLASS}}', 'admin-body'), {
-        headers: { 'Content-Type': 'text/html;charset=UTF-8' }
-      });
+    if (path === '/yanghao/dashboard') {
+      const cookie = request.headers.get('Cookie') || '';
+      if (cookie.includes(`admin_auth=${adminPassword}`)) {
+        const adminHTML = await renderAdminPanel(config);
+        const html = HTML_TEMPLATE
+          .replace('{{TITLE}}', '后台管理 - ' + config.title)
+          .replace('{{BODY_CLASS}}', 'admin-body')
+          .replace('{{CONTENT_PLACEHOLDER}}', adminHTML)
+          .replace('{{SEARCH_ENGINE_TEMPLATE}}', '')
+          .replace('{{HITOKOTO_SCRIPT}}', '');
+        return new Response(html, {
+          headers: { 'Content-Type': 'text/html;charset=UTF-8' }
+        });
+      } else {
+        return Response.redirect(new URL('/yanghao', request.url), 302);
+      }
     }
 
     // 后台 API
-    return handleAdminAPI(request, config);
+    return handleAdminAPI(request, config, env, adminPassword);
   }
 
   // 首页
@@ -1403,7 +1244,9 @@ async function handleRequest(request) {
   });
 }
 
-// 事件监听
-addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request));
-});
+// 事件监听 - 使用 Workers 模块格式
+export default {
+  async fetch(request, env, ctx) {
+    return handleRequest(request, env);
+  }
+};
