@@ -570,14 +570,14 @@ function renderLogin() {
           button.disabled = true;
           
           try {
-            const response = await fetch('/yanghao/login', {
+            const response = await fetch('/admin/login', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ password: password })
             });
             
             if (response.ok) {
-              window.location.href = '/yanghao/dashboard';
+              window.location.href = '/admin/dashboard';
             } else {
               alert('密码错误！');
             }
@@ -794,8 +794,8 @@ async function renderAdminPanel(config) {
       // 退出登录函数
       function logout() {
         if (confirm('确定要退出登录吗？')) {
-          document.cookie = 'admin_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/yanghao;';
-          window.location.href = '/yanghao';
+          document.cookie = 'admin_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/admin;';
+          window.location.href = '/admin';
         }
       }
       
@@ -830,7 +830,7 @@ async function renderAdminPanel(config) {
         });
         
         try {
-          const response = await fetch('/yanghao/config', {
+          const response = await fetch('/admin/config', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ search_engine: engines })
@@ -966,7 +966,7 @@ async function renderAdminPanel(config) {
         });
         
         try {
-          const response = await fetch('/yanghao/config', {
+          const response = await fetch('/admin/config', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ lists: categories })
@@ -986,7 +986,7 @@ async function renderAdminPanel(config) {
       // 清除缓存
       async function clearCache() {
         try {
-          const response = await fetch('/yanghao/clear-cache', { method: 'POST' });
+          const response = await fetch('/admin/clear-cache', { method: 'POST' });
           if (response.ok) {
             showMessage('success', '缓存已清除！');
           }
@@ -1008,7 +1008,7 @@ async function renderAdminPanel(config) {
         };
         
         try {
-          const response = await fetch('/yanghao/config', {
+          const response = await fetch('/admin/config', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -1072,13 +1072,13 @@ async function handleAdminAPI(request, config, env, adminPassword) {
   const path = url.pathname;
 
   // 登录验证
-  if (path === '/yanghao/login' && request.method === 'POST') {
+  if (path === '/admin/login' && request.method === 'POST') {
     try {
       const { password } = await request.json();
       if (password === adminPassword) {
         return new Response(JSON.stringify({ success: true }), {
           headers: { 
-            'Set-Cookie': `admin_auth=${adminPassword}; HttpOnly; Path=/yanghao; Max-Age=86400`,
+            'Set-Cookie': `admin_auth=${adminPassword}; HttpOnly; Path=/admin; Max-Age=86400`,
             'Content-Type': 'application/json'
           }
         });
@@ -1093,18 +1093,18 @@ async function handleAdminAPI(request, config, env, adminPassword) {
   }
 
   // 退出登录
-  if (path === '/yanghao/logout' && request.method === 'POST') {
+  if (path === '/admin/logout' && request.method === 'POST') {
     return new Response(JSON.stringify({ success: true }), {
       status: 302,
       headers: { 
-        'Location': '/yanghao',
-        'Set-Cookie': 'admin_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/yanghao; HttpOnly'
+        'Location': '/admin',
+        'Set-Cookie': 'admin_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/admin; HttpOnly'
       }
     });
   }
 
   // 验证管理员身份（除了登录和退出请求）
-  if (path !== '/yanghao/login' && path !== '/yanghao/logout') {
+  if (path !== '/admin/login' && path !== '/admin/logout') {
     const cookie = request.headers.get('Cookie') || '';
     if (!cookie.includes(`admin_auth=${adminPassword}`)) {
       return new Response(JSON.stringify({ error: '未授权' }), { 
@@ -1115,7 +1115,7 @@ async function handleAdminAPI(request, config, env, adminPassword) {
   }
 
   // 更新配置
-  if (path === '/yanghao/config' && request.method === 'PUT') {
+  if (path === '/admin/config' && request.method === 'PUT') {
     try {
       const updates = await request.json();
       const updatedConfig = { ...config, ...updates };
@@ -1137,7 +1137,7 @@ async function handleAdminAPI(request, config, env, adminPassword) {
   }
 
   // 清除缓存
-  if (path === '/yanghao/clear-cache' && request.method === 'POST') {
+  if (path === '/admin/clear-cache' && request.method === 'POST') {
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' }
     });
@@ -1161,9 +1161,9 @@ async function handleRequest(request, env) {
   const config = await getConfig(env);
 
   // 处理后台相关路由
-  if (path.startsWith('/yanghao')) {
+  if (path.startsWith('/admin')) {
     // 后台登录页面
-    if (path === '/yanghao' || path === '/yanghao/') {
+    if (path === '/admin' || path === '/admin/') {
       const cookie = request.headers.get('Cookie') || '';
       if (cookie.includes(`admin_auth=${adminPassword}`)) {
         const adminHTML = await renderAdminPanel(config);
@@ -1190,7 +1190,7 @@ async function handleRequest(request, env) {
     }
 
     // 后台仪表板
-    if (path === '/yanghao/dashboard') {
+    if (path === '/admin/dashboard') {
       const cookie = request.headers.get('Cookie') || '';
       if (cookie.includes(`admin_auth=${adminPassword}`)) {
         const adminHTML = await renderAdminPanel(config);
@@ -1204,7 +1204,7 @@ async function handleRequest(request, env) {
           headers: { 'Content-Type': 'text/html;charset=UTF-8' }
         });
       } else {
-        return Response.redirect(new URL('/yanghao', request.url), 302);
+        return Response.redirect(new URL('/admin', request.url), 302);
       }
     }
 
